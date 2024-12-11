@@ -19,6 +19,7 @@ public partial class MainForm : Form
         _clockTimer.Start();
 
         UpdateTaskStatus("Нет активной задачи"); // Изначальный статус
+        btnStartWork.Enabled = false; // Изначально кнопка неактивна
     }
 
     [STAThread]
@@ -34,6 +35,7 @@ public partial class MainForm : Form
         if (_cancellationTokenSource != null)
         {
             MessageBox.Show("Задача уже выполняется!");
+            btnStartWork.Enabled = false; // Кнопка становится неактивной
             return;
         }
 
@@ -51,10 +53,12 @@ public partial class MainForm : Form
                 // Выполнение асинхронной задачи
                 await RunLongTaskAsync(_cancellationTokenSource.Token, progressForm);
                 UpdateTaskStatus("Задача завершена."); // Обновление статуса
+                btnStartWork.Enabled = true; // Кнопка активируется после завершения
             }
             catch (OperationCanceledException)
             {
                 UpdateTaskStatus("Задача прервана."); // Обновление статуса
+                btnStartWork.Enabled = false; // Кнопка остаётся неактивной
                 MessageBox.Show("Задача была прервана.");
             }
             finally
@@ -75,6 +79,7 @@ public partial class MainForm : Form
         // Создаем токен отмены
         _cancellationTokenSource = new CancellationTokenSource();
         UpdateTaskStatus("Задача выполняется..."); // Обновление статуса
+        btnStartWork.Enabled = false; // Кнопка становится неактивной
 
         // Создаем и показываем форму прогресса
         using (var progressForm = new ProgressForm(_cancellationTokenSource))
@@ -86,11 +91,13 @@ public partial class MainForm : Form
                 // Выполнение асинхронной задачи
                 await RunLongTaskAsync(_cancellationTokenSource.Token,progressForm);
                 UpdateTaskStatus("Задача завершена."); // Обновление статуса
+                btnStartWork.Enabled = true; // Кнопка активируется после завершения
             }
             catch (OperationCanceledException)
             {
                 UpdateTaskStatus("Задача прервана."); // Обновление статуса
                 MessageBox.Show("Задача была прервана.");
+                btnStartWork.Enabled = false; // Кнопка остаётся неактивной
             }
             finally
             {
@@ -133,6 +140,7 @@ partial class MainForm
     private Button btnCancelTask;
     private Label lblClock; //  часы
     private Label lblTaskStatus; //  статус задачи
+    private Button btnStartWork; //"Начать работу"
 
     private void InitializeComponent()
     {
@@ -140,6 +148,7 @@ partial class MainForm
         this.btnCancelTask = new System.Windows.Forms.Button();
         this.lblClock = new System.Windows.Forms.Label(); // Инициализация часов
         this.lblTaskStatus = new System.Windows.Forms.Label();
+        this.btnStartWork = new System.Windows.Forms.Button();
         this.SuspendLayout();
 
         // 
@@ -183,11 +192,23 @@ partial class MainForm
         this.lblTaskStatus.Text = "Нет активной задачи";
 
         // 
+        // btnStartWork
+        // 
+        this.btnStartWork.Location = new System.Drawing.Point(12, 150); // Размещение ниже статуса задачи
+        this.btnStartWork.Name = "btnStartWork";
+        this.btnStartWork.Size = new System.Drawing.Size(150, 30);
+        this.btnStartWork.TabIndex = 4;
+        this.btnStartWork.Text = "Начать работу";
+        this.btnStartWork.UseVisualStyleBackColor = true;
+        this.btnStartWork.Enabled = false; // Изначально кнопка неактивна
+
+        // 
         // MainForm
         // 
-        this.ClientSize = new System.Drawing.Size(284, 161);
-        this.Controls.Add(this.lblTaskStatus); // Добавление статуса задачи на форму
-        this.Controls.Add(this.lblClock); // Добавление часов на форму
+        this.ClientSize = new System.Drawing.Size(284, 200);
+        this.Controls.Add(this.btnStartWork);
+        this.Controls.Add(this.lblTaskStatus); 
+        this.Controls.Add(this.lblClock); 
         this.Controls.Add(this.btnCancelTask);
         this.Controls.Add(this.btnStartTask);
         this.Name = "MainForm";
