@@ -10,7 +10,7 @@ public partial class MainForm : Form
     public MainForm()
     {
         InitializeComponent();
-        this.Load += MainForm_Load; // Добавлено: подписка на событие загрузки формы
+        this.Load += MainForm_Load; //  подписка на событие загрузки формы
 
         // Настройка таймера для часов
         _clockTimer = new Timer();
@@ -20,6 +20,7 @@ public partial class MainForm : Form
 
         UpdateTaskStatus("Нет активной задачи"); // Изначальный статус
         btnStartWork.Enabled = false; // Изначально кнопка неактивна
+        UpdateTaskStateLabel(null); // Сброс цвета метки
     }
 
     [STAThread]
@@ -32,43 +33,14 @@ public partial class MainForm : Form
 
     private async void MainForm_Load(object sender, EventArgs e) // Новый метод
     {
-        if (_cancellationTokenSource != null)
-        {
-            MessageBox.Show("Задача уже выполняется!");
-            btnStartWork.Enabled = false; // Кнопка становится неактивной
-            return;
-        }
-
-        // Создаем токен отмены
-        _cancellationTokenSource = new CancellationTokenSource();
-        UpdateTaskStatus("Задача выполняется..."); // Обновление статуса
-
-        // Создаем и показываем форму прогресса
-        using (var progressForm = new ProgressForm(_cancellationTokenSource))
-        {
-            progressForm.Show();
-
-            try
-            {
-                // Выполнение асинхронной задачи
-                await RunLongTaskAsync(_cancellationTokenSource.Token, progressForm);
-                UpdateTaskStatus("Задача завершена."); // Обновление статуса
-                btnStartWork.Enabled = true; // Кнопка активируется после завершения
-            }
-            catch (OperationCanceledException)
-            {
-                UpdateTaskStatus("Задача прервана."); // Обновление статуса
-                btnStartWork.Enabled = false; // Кнопка остаётся неактивной
-                MessageBox.Show("Задача была прервана.");
-            }
-            finally
-            {
-                _cancellationTokenSource = null;
-            }
-        }
+        await StartMainTask();
     }
 
     private async void btnStartTask_Click(object sender, EventArgs e)
+    {
+        await StartMainTask();
+    }
+    private async Task StartMainTask()
     {
         if (_cancellationTokenSource != null)
         {
@@ -76,28 +48,39 @@ public partial class MainForm : Form
             return;
         }
 
-        // Создаем токен отмены
         _cancellationTokenSource = new CancellationTokenSource();
-        UpdateTaskStatus("Задача выполняется..."); // Обновление статуса
+        UpdateTaskStatus("Задача выполняется...");
         btnStartWork.Enabled = false; // Кнопка становится неактивной
+        UpdateTaskStateLabel(null); // Сброс цвета метки
 
-        // Создаем и показываем форму прогресса
         using (var progressForm = new ProgressForm(_cancellationTokenSource))
         {
             progressForm.Show();
 
             try
             {
-                // Выполнение асинхронной задачи
-                await RunLongTaskAsync(_cancellationTokenSource.Token,progressForm);
-                UpdateTaskStatus("Задача завершена."); // Обновление статуса
-                btnStartWork.Enabled = true; // Кнопка активируется после завершения
+                bool result = await RunLongTaskAsync(_cancellationTokenSource.Token, progressForm);
+
+                if (result)
+                {
+                    UpdateTaskStatus("Задача завершена.");
+                    MessageBox.Show("Задача завершена успешно!");
+                    btnStartWork.Enabled = true; // Кнопка активируется
+                    UpdateTaskStateLabel(Color.LightGreen); // Метка окрашивается в салатовый
+                }
+                else
+                {
+                    UpdateTaskStatus("Задача завершена с ошибкой.");
+                    MessageBox.Show("Задача завершена с ошибкой.");
+                    UpdateTaskStateLabel(Color.Red); // Метка окрашивается в красный
+                }
             }
             catch (OperationCanceledException)
             {
-                UpdateTaskStatus("Задача прервана."); // Обновление статуса
+                UpdateTaskStatus("Задача прервана.");
                 MessageBox.Show("Задача была прервана.");
                 btnStartWork.Enabled = false; // Кнопка остаётся неактивной
+                UpdateTaskStateLabel(Color.Red); // Метка окрашивается в красный
             }
             finally
             {
@@ -105,8 +88,7 @@ public partial class MainForm : Form
             }
         }
     }
-
-    private async Task RunLongTaskAsync(CancellationToken token,ProgressForm progressForm)
+    private async Task<bool> RunLongTaskAsync(CancellationToken token,ProgressForm progressForm)
     {
         for (int i = 1; i <= 100; i++)
         {
@@ -114,6 +96,8 @@ public partial class MainForm : Form
             progressForm.UpdateProgress(i); //  обновление прогресса
             await Task.Delay(100, token); // Имитация ввода/вывода
         }
+        // Возвращаем результат выполнения задачи
+        return new Random().Next(0, 2) == 1; // Случайный результат: true или false
     }
 
     private void btnCancelTask_Click(object sender, EventArgs e)
@@ -132,6 +116,21 @@ public partial class MainForm : Form
             lblTaskStatus.Text = status;
         }
     }
+
+    private void UpdateTaskStateLabel(Color? color) // Новый метод
+    {
+        if (lblTaskState.InvokeRequired)
+        {
+            lblTaskState.Invoke(new Action(() =>
+            {
+                lblTaskState.BackColor = color ?? Color.Transparent;
+            }));
+        }
+        else
+        {
+            lblTaskState.BackColor = color ?? Color.Transparent;
+        }
+    }
 }
 partial class MainForm
 {
@@ -141,14 +140,16 @@ partial class MainForm
     private Label lblClock; //  часы
     private Label lblTaskStatus; //  статус задачи
     private Button btnStartWork; //"Начать работу"
+    private Label lblTaskState; //  метка состояния
 
     private void InitializeComponent()
     {
         this.btnStartTask = new System.Windows.Forms.Button();
         this.btnCancelTask = new System.Windows.Forms.Button();
-        this.lblClock = new System.Windows.Forms.Label(); // Инициализация часов
+        this.lblClock = new System.Windows.Forms.Label(); 
         this.lblTaskStatus = new System.Windows.Forms.Label();
         this.btnStartWork = new System.Windows.Forms.Button();
+        this.lblTaskState = new System.Windows.Forms.Label();
         this.SuspendLayout();
 
         // 
@@ -203,9 +204,20 @@ partial class MainForm
         this.btnStartWork.Enabled = false; // Изначально кнопка неактивна
 
         // 
+        // lblTaskState
+        // 
+        this.lblTaskState.Location = new System.Drawing.Point(12, 190); // Метка ниже кнопки
+        this.lblTaskState.Name = "lblTaskState";
+        this.lblTaskState.Size = new System.Drawing.Size(260, 30);
+        this.lblTaskState.TabIndex = 5;
+        this.lblTaskState.Text = " ";
+        this.lblTaskState.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+
+        // 
         // MainForm
         // 
-        this.ClientSize = new System.Drawing.Size(284, 200);
+        this.ClientSize = new System.Drawing.Size(284, 250);
+        this.Controls.Add(this.lblTaskState); // Добавлена метка состояния
         this.Controls.Add(this.btnStartWork);
         this.Controls.Add(this.lblTaskStatus); 
         this.Controls.Add(this.lblClock); 

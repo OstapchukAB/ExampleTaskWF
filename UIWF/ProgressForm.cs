@@ -21,7 +21,7 @@ public partial class ProgressForm : Form
         base.OnFormClosing(e);
     }
 
-    public void UpdateProgress(int value) // Новая функция для обновления прогресса
+    public void UpdateProgress(int value) // обновления прогресса
     {
         if (progressBar.InvokeRequired)
         {
