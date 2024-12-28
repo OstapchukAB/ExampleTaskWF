@@ -59,7 +59,13 @@ public partial class MainForm : Form
     {
         if (LongTaskProcessed)
         {
-            MessageBox.Show("Задача уже выполняется!");
+            using (var ms = new Form() {Text="",MinimizeBox=false,MaximizeBox=false,Size=new Size(100,100) })
+            {
+                ms.Controls.Add(new Label() {Text= "Задача уже выполняется", Dock =DockStyle.Fill});
+                ms.Show();
+                await Task.Delay(TimeSpan.FromSeconds(2));
+                ms.Dispose();
+            }
             return;
         }
 
@@ -78,15 +84,15 @@ public partial class MainForm : Form
 
             if (result)
             {
-                UpdateTaskStatus("Задача завершена.");
-                MessageBox.Show("Задача завершена успешно!");
+                UpdateTaskStatus("Задача завершена.[Успешно]");
+               // MessageBox.Show("Задача завершена успешно!");
                 btnStartWork.Enabled = true; // Кнопка активируется
                 UpdateTaskStateLabel(Color.LightGreen); // Метка окрашивается в салатовый
             }
             else
             {
-                UpdateTaskStatus("Задача завершена с ошибкой.");
-                MessageBox.Show("Задача завершена с ошибкой.");
+                UpdateTaskStatus("Задача завершена.[Ошибка]");
+                //MessageBox.Show("Задача завершена с ошибкой.");
                 UpdateTaskStateLabel(Color.Red); // Метка окрашивается в красный
             }
         }
@@ -95,7 +101,7 @@ public partial class MainForm : Form
             UpdateTaskStatus("Задача прервана.");
             btnStartWork.Enabled = false; // Кнопка остаётся неактивной
             UpdateTaskStateLabel(Color.Red); // Метка окрашивается в красный
-            MessageBox.Show("Задача была прервана.");
+            //MessageBox.Show("Задача была прервана.");
 
         }
         finally
