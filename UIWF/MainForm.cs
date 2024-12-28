@@ -27,6 +27,18 @@ public partial class MainForm : Form
         
         UpdateTaskStateLabel(null); // Сброс цвета метки
         this.Shown += async (s, e) => await StartMainTaskAsync();
+        this.FormClosing += async (s, e) => 
+        { 
+        if (LongTaskProcessed)
+            {
+                e.Cancel=true;
+                LongTaskProcessed = false;
+                await Task.Delay(TimeSpan.FromSeconds(1));
+                e.Cancel = false;
+                this.Close();
+            }
+        
+        };
     }
 
     [STAThread]
