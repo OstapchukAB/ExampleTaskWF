@@ -59,14 +59,34 @@ public partial class MainForm : Form
     {
         if (LongTaskProcessed)
         {
-            using (var ms = new Form() {Text="",MinimizeBox=false,MaximizeBox=false,Size=new Size(100,100) })
-            {
-                ms.Controls.Add(new Label() {Text= "Задача уже выполняется", Dock =DockStyle.Fill});
-                ms.Show();
-                await Task.Delay(TimeSpan.FromSeconds(2));
-                ms.Dispose();
-            }
+            #region Комментарий
+            /*Application.ExitThread() – это метод класса System.Windows.Forms.Application, который завершает текущий поток приложения Windows Forms.
+                Что происходит при вызове Application.ExitThread()?
+
+            Завершение цикла обработки сообщений:
+            Каждый поток с графическим интерфейсом (UI) имеет цикл обработки сообщений, который обрабатывает события, такие как клики, ввод текста, и т. д. Метод Application.ExitThread() завершает этот цикл для текущего потока.
+
+            Закрытие окон, связанных с потоком:
+            Все окна, созданные в этом потоке, закрываются. Если MessageBox был создан в отдельном потоке, то этот метод завершит его, так как MessageBox зависит от цикла обработки сообщений.
+
+            Не влияет на основной поток:
+            Если приложение имеет несколько потоков, каждый с собственным циклом сообщений, то Application.ExitThread() завершает только текущий поток, не затрагивая другие.
+
+                Важные моменты:
+
+            Ограничение по использованию: Этот метод безопасен только для потоков, которые запустили собственный цикл обработки сообщений через, например, Application.Run(). Если он используется в основном потоке, он завершает все приложение.
+
+            Работа с многопоточностью:
+                Когда MessageBox показывается в другом потоке, Application.ExitThread() корректно завершает этот поток после таймаута.*/
+            #endregion
+            await Task.Run(() => 
+            { 
+                MessageBox.Show("Задача уже выполняется","", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                Task.Delay(5000).Wait();
+                Application.ExitThread();
+            });
             return;
+
         }
 
         var cts = new CancellationTokenSource();
