@@ -143,7 +143,7 @@ public partial class MainForm : Form
                
                 if (LongTaskProcessed==false && cts.Token.IsCancellationRequested ==false)
                 {
-                   cts.Cancel();
+                   await cts.CancelAsync();
                 }
                 cts.Token.ThrowIfCancellationRequested();
                 progressForm.UpdateProgress(i); //  обновление прогресса
